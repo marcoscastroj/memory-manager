@@ -1,103 +1,152 @@
-class MemoryManager:
-    def __init__(self, total_memory_kb=128):
-        self.total_memory_kb = total_memory_kb
-        self.memory = [None] * total_memory_kb
-        self.processes = {}  
+class Processo:
+    def __init__(self, processo_id, tamanho):
+        self.processo_id = processo_id
+        self.tamanho = tamanho
 
-    def allocate_first_fit(self, process_id, size_kb):
-        for i in range(self.total_memory_kb):
-            if not self.memory[i]:
-                if i + size_kb <= self.total_memory_kb:
-                    for j in range(i, i + size_kb):
-                        self.memory[j] = process_id
-                    self.processes[process_id] = (i, size_kb)
-                    print(f"Alocado {size_kb} KB para o Processo {process_id} a partir do endereço {i}")
-                    return True
-                else:
-                    print(f"Espaço insuficiente para o Processo {process_id}")
-                    return False
-        print(f"Nenhum espaço disponível para o Processo {process_id}")
-        return False
+class Memoria:
+    def __init__(self, tamanho_total):
+        self.tamanho_total = tamanho_total
+        self.espaco_livre = tamanho_total
+        self.processos = [None] * tamanho_total
 
-    def allocate_best_fit(self, process_id, size_kb):
-        best_fit_index = None
-        best_fit_size = float('inf')
-        for i in range(self.total_memory_kb):
-            if not self.memory[i]:
-                block_size = 1
-                while i + block_size < self.total_memory_kb and not self.memory[i + block_size]:
-                    block_size += 1
-                if block_size >= size_kb and block_size < best_fit_size:
-                    best_fit_index = i
-                    best_fit_size = block_size
+    def alocar_processo_first_fit(self, processo_id, tamanho_processo):
+        if tamanho_processo > self.espaco_livre:
+            print("Erro: Não há espaço suficiente na memória para alocar o processo.")
+            return
 
-        if best_fit_index is not None:
-            for i in range(best_fit_index, best_fit_index + size_kb):
-                self.memory[i] = process_id
-            self.processes[process_id] = (best_fit_index, size_kb)
-            print(f"Alocado {size_kb} KB para o Processo {process_id} usando Best Fit no endereço {best_fit_index}")
-            return True
-        print(f"Espaço insuficiente para o Processo {process_id}")
-        return False
-
-    def allocate_worst_fit(self, process_id, size_kb):
-        worst_fit_index = None
-        worst_fit_size = 0
-        for i in range(self.total_memory_kb):
-            if not self.memory[i]:
-                block_size = 1
-                while i + block_size < self.total_memory_kb and not self.memory[i + block_size]:
-                    block_size += 1
-                if block_size >= size_kb and block_size > worst_fit_size:
-                    worst_fit_index = i
-                    worst_fit_size = block_size
-
-        if worst_fit_index is not None:
-            for i in range(worst_fit_index, worst_fit_index + size_kb):
-                self.memory[i] = process_id
-            self.processes[process_id] = (worst_fit_index, size_kb)
-            print(f"Alocado {size_kb} KB para o Processo {process_id} usando Worst Fit no endereço {worst_fit_index}")
-            return True
-        print(f"Espaço insuficiente para o Processo {process_id}")
-        return False
-
-    def deallocate(self, process_id):
-        if process_id in self.processes:
-            start_index, size_kb = self.processes[process_id]
-            for i in range(start_index, start_index + size_kb):
-                self.memory[i] = None
-            del self.processes[process_id]
-            print(f"Desalocada a memória do processo {process_id}")
-            return True
-        print(f"Processo {process_id} não encontrado")
-        return False
-
-    def print_memory(self):
-        for i in range(self.total_memory_kb):
-            if self.memory[i]:
-                print(f"Endereço {i}: Processo {self.memory[i]}")
+        indice_inicio = 0
+        espaco_atual = 0
+        for i, processo in enumerate(self.processos):
+            if processo is None:
+                espaco_atual += 1
+                if espaco_atual >= tamanho_processo:
+                    indice_inicio = i - espaco_atual + 1
+                    break
             else:
-                print(f"Endereço {i}: Livre")
+                espaco_atual = 0
+
+        if espaco_atual < tamanho_processo:
+            indice_inicio = len(self.processos)
+
+        for i in range(indice_inicio, indice_inicio + tamanho_processo):
+            self.processos[i] = processo_id
+        self.espaco_livre -= tamanho_processo
+        print(f"Processo {processo_id} alocado na memória.")
+
+    def alocar_processo_best_fit(self, processo_id, tamanho_processo):
+            if tamanho_processo > self.espaco_livre:
+                print("Erro: Não há espaço suficiente na memória para alocar o processo.")
+                return
+
+            melhor_inicio = -1
+            melhor_tamanho_livre = float('inf')
+            inicio_atual = -1
+            tamanho_atual = 0
+            for i, processo in enumerate(self.processos):
+                if processo is None:
+                    tamanho_atual += 1
+                    if tamanho_atual >= tamanho_processo:
+                        if tamanho_atual < melhor_tamanho_livre:
+                            melhor_inicio = i - tamanho_atual + 1
+                            melhor_tamanho_livre = tamanho_atual
+                else:
+                    inicio_atual = -1
+                    tamanho_atual = 0
+
+            if melhor_inicio == -1:
+                melhor_inicio = len(self.processos)
+
+            for i in range(melhor_inicio, melhor_inicio + tamanho_processo):
+                self.processos[i] = processo_id
+            self.espaco_livre -= tamanho_processo
+            print(f"Processo {processo_id} alocado na memória.")
+
+    def alocar_processo_worst_fit(self, processo_id, tamanho_processo):
+        if tamanho_processo > self.espaco_livre:
+            print("Erro: Não há espaço suficiente na memória para alocar o processo.")
+            return
+
+        pior_inicio = -1
+        pior_tamanho_livre = -1
+        inicio_atual = -1
+        tamanho_atual = 0
+        for i, processo in enumerate(self.processos):
+            if processo is None:
+                tamanho_atual += 1
+                if tamanho_atual >= tamanho_processo:
+                    if tamanho_atual > pior_tamanho_livre:
+                        pior_inicio = i - tamanho_atual + 1
+                        pior_tamanho_livre = tamanho_atual
+            else:
+                inicio_atual = -1
+                tamanho_atual = 0
+
+        if pior_inicio == -1:
+            pior_inicio = len(self.processos)
+
+        for i in range(pior_inicio, pior_inicio + tamanho_processo):
+            self.processos[i] = processo_id
+        self.espaco_livre -= tamanho_processo
+        print(f"Processo {processo_id} alocado na memória.")
+
+
+    def exibir_processos(self):
+        processos = {}
+        for i, processo in enumerate(self.processos):
+            if processo is not None:
+                if processo not in processos:
+                    processos[processo] = []
+                processos[processo].append(i)
+
+        print("\nProcessos na memória:")
+        for processo, posicoes in processos.items():
+            posicoes_str = ", ".join(str(posicao) for posicao in posicoes)
+            print(f"Processo {processo}: Posições {posicoes_str}")
+
+    def liberar_processo(self, processo_id):
+        for i, processo in enumerate(self.processos):
+            if processo == processo_id:
+                self.processos[i] = None
+                self.espaco_livre += 1
+        print(f"Processo {processo_id} liberado da memória.")
+
+def main():
+    memoria = Memoria(128)
+
+    while True:
+        print("\nMenu:")
+        print("1. Adicionar processo (First Fit)")
+        print("2. Adicionar processo (Best Fit)")
+        print("3. Adicionar processo (Worst Fit)")
+        print("4. Liberar processo")
+        print("5. Exibir processos na memória")
+        print("6. Sair")
+
+        escolha = input("Escolha uma opção: ")
+
+        if escolha == "1":
+            processo_id = input("Digite o ID do processo: ")
+            tamanho_processo = int(input("Digite o tamanho do processo: "))
+            memoria.alocar_processo_first_fit(processo_id, tamanho_processo)
+        elif escolha == "2":
+            processo_id = input("Digite o ID do processo: ")
+            tamanho_processo = int(input("Digite o tamanho do processo: "))
+            memoria.alocar_processo_best_fit(processo_id, tamanho_processo)
+        elif escolha == "3":
+            processo_id = input("Digite o ID do processo: ")
+            tamanho_processo = int(input("Digite o tamanho do processo: "))
+            memoria.alocar_processo_worst_fit(processo_id, tamanho_processo)
+        elif escolha == "4":
+            processo_id = input("Digite o ID do processo a ser liberado: ")
+            memoria.liberar_processo(processo_id)
+        elif escolha == "5":
+            memoria.exibir_processos()
+        elif escolha == "6":
+            print("Encerrando o programa.")
+            break
+        else:
+            print("Opção inválida. Por favor, escolha novamente.")
+
 
 if __name__ == "__main__":
-    memory_manager = MemoryManager()
-
-    memory_manager.allocate_best_fit("P1", 20)
-    memory_manager.allocate_best_fit("P2", 38)
-    memory_manager.allocate_best_fit("P3", 38)
-    memory_manager.allocate_best_fit("P4", 20)
-    memory_manager.deallocate("P2")
-    memory_manager.allocate_best_fit("P6", 8)
-    memory_manager.allocate_best_fit("P7", 5)
-    
-    
-    
-
-    #memory_manager.allocate_best_fit("P2", 15)
-    #memory_manager.allocate_worst_fit("P3", 30)
-
-    #memory_manager.deallocate("P2")
-
-    #memory_manager.allocate_first_fit("P8", 1)
-
-    memory_manager.print_memory()
+    main()
