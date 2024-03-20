@@ -7,7 +7,7 @@ class Memoria:
     def __init__(self, tamanho_total):
         self.tamanho_total = tamanho_total
         self.espaco_livre = tamanho_total
-        self.processos = [None] * tamanho_total
+        self.processos = [None] * tamanho_total 
 
     def alocar_processo_first_fit(self, processo_id, tamanho_processo):
         if tamanho_processo > self.espaco_livre:
@@ -26,7 +26,8 @@ class Memoria:
                 espaco_atual = 0
 
         if espaco_atual < tamanho_processo:
-            indice_inicio = len(self.processos)
+            print("Erro: Não há espaço contíguo suficiente na memória para alocar o processo.")
+            return
 
         for i in range(indice_inicio, indice_inicio + tamanho_processo):
             self.processos[i] = processo_id
@@ -34,32 +35,33 @@ class Memoria:
         print(f"Processo {processo_id} alocado na memória.")
 
     def alocar_processo_best_fit(self, processo_id, tamanho_processo):
-            if tamanho_processo > self.espaco_livre:
-                print("Erro: Não há espaço suficiente na memória para alocar o processo.")
-                return
+        if tamanho_processo > self.espaco_livre:
+            print("Erro: Não há espaço suficiente na memória para alocar o processo.")
+            return
 
-            melhor_inicio = -1
-            melhor_tamanho_livre = float('inf')
-            inicio_atual = -1
-            tamanho_atual = 0
-            for i, processo in enumerate(self.processos):
-                if processo is None:
-                    tamanho_atual += 1
-                    if tamanho_atual >= tamanho_processo:
-                        if tamanho_atual < melhor_tamanho_livre:
-                            melhor_inicio = i - tamanho_atual + 1
-                            melhor_tamanho_livre = tamanho_atual
-                else:
-                    inicio_atual = -1
-                    tamanho_atual = 0
+        melhor_inicio = -1
+        melhor_tamanho_livre = float('inf')
+        inicio_atual = -1
+        tamanho_atual = 0
+        for i, processo in enumerate(self.processos):
+            if processo is None:
+                tamanho_atual += 1
+                if tamanho_atual >= tamanho_processo:
+                    if tamanho_atual < melhor_tamanho_livre:
+                        melhor_inicio = i - tamanho_atual + 1
+                        melhor_tamanho_livre = tamanho_atual
+            else:
+                inicio_atual = -1
+                tamanho_atual = 0
 
-            if melhor_inicio == -1:
-                melhor_inicio = len(self.processos)
+        if melhor_inicio == -1:
+            print("Erro: Não há espaço contíguo suficiente na memória para alocar o processo.")
+            return
 
-            for i in range(melhor_inicio, melhor_inicio + tamanho_processo):
-                self.processos[i] = processo_id
-            self.espaco_livre -= tamanho_processo
-            print(f"Processo {processo_id} alocado na memória.")
+        for i in range(melhor_inicio, melhor_inicio + tamanho_processo):
+            self.processos[i] = processo_id
+        self.espaco_livre -= tamanho_processo
+        print(f"Processo {processo_id} alocado na memória.")
 
     def alocar_processo_worst_fit(self, processo_id, tamanho_processo):
         if tamanho_processo > self.espaco_livre:
@@ -82,14 +84,13 @@ class Memoria:
                 tamanho_atual = 0
 
         if pior_inicio == -1:
-            pior_inicio = len(self.processos)
+            print("Erro: Não há espaço contíguo suficiente na memória para alocar o processo.")
+            return
 
         for i in range(pior_inicio, pior_inicio + tamanho_processo):
             self.processos[i] = processo_id
         self.espaco_livre -= tamanho_processo
         print(f"Processo {processo_id} alocado na memória.")
-
-
     def exibir_processos(self):
         processos = {}
         for i, processo in enumerate(self.processos):
